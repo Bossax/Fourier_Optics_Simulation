@@ -13,10 +13,26 @@ macro bind(def, element)
     end
 end
 
+# ╔═╡ 03209d58-df73-4513-8677-46bab1ab424a
+# this part is for binder setup
+begin
+	
+	# We set up a new environment for this notebook
+	import Pkg
+	Pkg.activate(mktempdir())
+	
+	
+	# This is how you add a package:
+	Pkg.add("PlutoUI")
+	Pkg.add("Plots")
+	Pkg.add("FFTW")
+	Pkg.add("DSP")
+	
+end
+
 # ╔═╡ 0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # import modules
 begin 
-	using Statistics
 	using Plots
 	using FFTW
 	using PlutoUI
@@ -496,6 +512,7 @@ length(s)
 
 # ╔═╡ Cell order:
 # ╟─655d730b-6dee-45f0-85b1-db04b590a9d8
+# ╠═03209d58-df73-4513-8677-46bab1ab424a
 # ╠═0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # ╟─773c805e-65cc-4890-9da6-1108273490d9
 # ╠═9bbf46ca-75d0-4d45-8a38-a6635e3a5ce2

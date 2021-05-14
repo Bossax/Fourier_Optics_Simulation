@@ -198,6 +198,28 @@ function circle(Ls,N,r,A_u = 1.0)
 	
 end
 
+# ╔═╡ e6f8522f-a665-4b81-8c43-f91f2807549e
+# source parameters
+begin 
+	Ls = 0.5 			#side length
+	Ns = 250 			# samples
+	w_x = 0.051 		# half-width of the aperture
+	w_y = 0.051
+	
+	λs = 0.5e-6
+	ks =2*π/λs
+	zs = 2000
+	
+	u1 = square(Ls,Ns,w_x,w_y);
+	I1 = abs.(u1.^2);
+
+	dx = Ls/Ns
+	x_coord = -Ls/2:dx:Ls/2-dx
+	heatmap(x_coord,x_coord,u1, xlabel = "m", ylabel = "m",
+			color = :grays, size = (300,300), aspect_ratio = 1,
+			title = "Square beam", titlefontsize = 10)
+end
+
 # ╔═╡ 15ddd06a-cf27-4333-a06b-ec1c7b17c197
 # source parameters
 begin 
@@ -205,9 +227,9 @@ begin
 	Nc = 500 			# samples
 	r = 0.051
 	
-	λ = 0.5e-6
-	k =2*π/λ
-	z = 2000
+	λc = 0.5e-6
+	kc =2*π/λc
+	zc = 2000
 	
 	u3 = circle(Lc,Nc,r);
 	I3 = abs.(u3.^2);
@@ -219,28 +241,6 @@ begin
 			title = "Circle beam", titlefontsize = 10)
 end
 
-# ╔═╡ e6f8522f-a665-4b81-8c43-f91f2807549e
-# source parameters
-begin 
-	Ls = 0.5 			#side length
-	N = 250 			# samples
-	w_x = 0.051 		# half-width of the aperture
-	w_y = 0.051
-	
-	λc = 0.5e-6
-	kc =2*π/λ
-	zc = 2000
-	
-	u1 = square(Ls,N,w_x,w_y);
-	I1 = abs.(u1.^2);
-
-	dx = Ls/N
-	x_coord = -Ls/2:dx:Ls/2-dx
-	heatmap(x_coord,x_coord,u1, xlabel = "m", ylabel = "m",
-			color = :grays, size = (300,300), aspect_ratio = 1,
-			title = "Square beam", titlefontsize = 10)
-end
-
 # ╔═╡ 2a995bf5-125c-44d9-ac24-26b40065d4ca
 md"
 **Result from the transfer function**
@@ -248,7 +248,7 @@ md"
 
 # ╔═╡ 814e7c4c-24a1-4c4a-92e5-4dcb1d9ddc97
 let
-	u2_TF = propTF(u1, Ls, λ, z)
+	u2_TF = propTF(u1, Ls, λs, zs)
 	
 	# irridance
 	plt1 = heatmap(x_coord,x_coord,abs.(u2_TF.^2), xlabel = "m", ylabel = "m",
@@ -256,7 +256,7 @@ let
 			title = "Irridance", titlefontsize = 10,
 			lims = (x_coord[1], x_coord[end]))
 	# phase
-	plt2 = plot(x_coord, unwrap(angle.(u2_TF[convert(Int64,N/2+1),:])),
+	plt2 = plot(x_coord, unwrap(angle.(u2_TF[convert(Int64,Ns/2+1),:])),
 				xlabel = "m", ylabel = "rad",
 				title = "Phase", titlefontsize = 10)
 	
@@ -265,7 +265,7 @@ end
 
 # ╔═╡ 67e7a36f-2e64-4efa-9c81-c2908d1f5b28
 let
-	u2_TF = propTF(u3, Lc, λ, z)
+	u2_TF = propTF(u3, Lc, λc, zc)
 	
 	# irridance
 	plt1 = heatmap(x_coordc,x_coordc,abs.(u2_TF.^2), xlabel = "m", ylabel = "m",
@@ -287,7 +287,7 @@ md"
 
 # ╔═╡ d371a0a7-c9d0-459b-bcfe-8e83cc400d43
 let
-	u2_IR = propIR(u1, Ls, λ, z)
+	u2_IR = propIR(u1, Ls, λs, zs)
 	
 	# irridance
 	plt1 = heatmap(x_coord,x_coord,abs.(u2_IR.^2), xlabel = "m", ylabel = "m",
@@ -296,7 +296,7 @@ let
 			lims = (x_coord[1], x_coord[end]))
 	
 	#phase
-	plt2 = plot(x_coord, unwrap(angle.(u2_IR[convert(Int64,N/2+1),:])),
+	plt2 = plot(x_coord, unwrap(angle.(u2_IR[convert(Int64,Ns/2+1),:])),
 				xlabel = "m", ylabel = "rad",
 				title = "Phase", titlefontsize = 10)
 	
@@ -305,7 +305,7 @@ end
 
 # ╔═╡ eaf4589e-76f0-4b31-9fd6-188560fd7e3f
 let
-	u2_IR = propIR(u3, Lc, λ, z)
+	u2_IR = propIR(u3, Lc, λc, zc)
 	
 	# irridance
 	plt1 = heatmap(x_coordc,x_coordc,abs.(u2_IR.^2), xlabel = "m", ylabel = "m",
@@ -336,7 +336,7 @@ end
 # ╔═╡ 9e90c16c-5142-42f9-87ac-3958a2ce1bfb
 begin
 	N_slider = @bind N_interact Slider(100:50:500, default=250, show_value=true)
-	md""" Sample = $(N_slider) m"""
+	md""" Sample = $(N_slider) samples"""
 end
 
 # ╔═╡ b0357d32-6669-4f2f-aa61-1a81c9612922
@@ -347,7 +347,7 @@ end
 
 # ╔═╡ 4770d444-db59-4e85-baa0-0d54834afbcd
 let
-	F_number = round(w_interact^2/(λ*z_interact), sigdigits=2)
+	F_number = round(w_interact^2/(λs*z_interact), sigdigits=2)
 	Markdown.MD(Markdown.Admonition("Fresnel Number", "Fresnel Number",
 					[md" `` \frac{w^2}{\lambda z}`` =  $F_number , where ``w`` is half-width of the square"]))
 	
@@ -356,8 +356,8 @@ end
 # ╔═╡ d4af9fc6-e198-43bc-8847-5c2fe7b2a590
 let
 	u1_sq_interact = square(Ls,N_interact,w_interact,w_interact)
-	u2_TF = propTF(u1_sq_interact, Ls, λ, z_interact)
-	u2_IR = propIR(u1_sq_interact, Ls, λ, z_interact)
+	u2_TF = propTF(u1_sq_interact, Ls, λs, z_interact)
+	u2_IR = propIR(u1_sq_interact, Ls, λs, z_interact)
 	
 	dx_sq = Ls/N_interact
 	dist_coord = -Ls/2:dx_sq:Ls/2-dx_sq
@@ -444,11 +444,11 @@ end
 
 # ╔═╡ f7c30403-7716-42a1-b7a9-68884456a249
 let
-	u1FF = square(Ls,N,0.011,0.011);
+	u1FF = square(Ls,Ns,0.011,0.011);
 	
-	(u2,L2)= propFF(u1FF,Ls, λc, zc)
+	(u2,L2)= propFF(u1FF,Ls, λs, zs)
 	
-	dx2 = λc*zc/Ls
+	dx2 = λs*zs/Ls
 	x_coordFF = -L2/2:dx2:L2/2-dx2
 	# irridance
 	plt1 = heatmap(x_coordFF,x_coordFF,abs.(u2), xlabel = "m", ylabel = "m",
@@ -456,7 +456,7 @@ let
 			title = "Field", titlefontsize = 10,
 			lims = (x_coordFF[1], x_coordFF[end]))
 	# magnitude x section
-	plt2 = plot(x_coordFF, abs.(u2[convert(Int64,N/2+1),:]),
+	plt2 = plot(x_coordFF, abs.(u2[convert(Int64,Ns/2+1),:]),
 				xlabel = "m", ylabel = "irridance",
 				title = "Magnitude cross-section", titlefontsize = 10)
 	
@@ -465,7 +465,28 @@ let
 end
 
 # ╔═╡ 103ad2be-8eb6-400c-93bc-0f73a09c2df7
+let
 
+	u1FFc = circle(Lc,Nc,0.011,0.011);
+	
+	(u2c,L2c)= propFF(u1FFc,Lc, λc, zc)
+
+	dxc = λc*zc/Lc
+	x_coordFF = -L2c/2:dxc:L2c/2-dxc
+	
+	# irridance
+	plt1 = heatmap(x_coordFF,x_coordFF,abs.(u2c), xlabel = "m", ylabel = "m",
+			color = :grays, aspect_ratio = 1, cbar = false,
+			title = "Field", titlefontsize = 10,
+			lims = (x_coordFF[1], x_coordFF[end]))
+	# magnitude x section
+	plt2 = plot(x_coordFF, abs.(u2c[convert(Int64,Nc/2+1),:]),
+				xlabel = "m", ylabel = "irridance",
+				title = "Magnitude cross-section", titlefontsize = 10)
+	
+	plot(plt1,plt2, layout = (1,2),	size = (500,300), leg = false)
+	
+end
 
 # ╔═╡ 0ce9ed22-5104-4778-917f-48e8485f9bda
 md"
@@ -521,8 +542,8 @@ length(s)
 # ╟─38008805-19a6-4150-b231-9c17aa5f5e3a
 # ╟─bd6d5054-e2c0-45a9-aecf-60c51790569f
 # ╟─c008a685-9d95-4a15-9430-e69d0cd9d6c9
-# ╟─e6f8522f-a665-4b81-8c43-f91f2807549e
-# ╟─15ddd06a-cf27-4333-a06b-ec1c7b17c197
+# ╠═e6f8522f-a665-4b81-8c43-f91f2807549e
+# ╠═15ddd06a-cf27-4333-a06b-ec1c7b17c197
 # ╟─2a995bf5-125c-44d9-ac24-26b40065d4ca
 # ╟─814e7c4c-24a1-4c4a-92e5-4dcb1d9ddc97
 # ╟─67e7a36f-2e64-4efa-9c81-c2908d1f5b28
@@ -537,8 +558,8 @@ length(s)
 # ╟─d4af9fc6-e198-43bc-8847-5c2fe7b2a590
 # ╟─d0aa8b36-1332-47c0-8be9-d33f58395d22
 # ╠═950176a0-b190-4908-9561-a7f1cc1949b0
-# ╠═f7c30403-7716-42a1-b7a9-68884456a249
-# ╠═103ad2be-8eb6-400c-93bc-0f73a09c2df7
+# ╟─f7c30403-7716-42a1-b7a9-68884456a249
+# ╟─103ad2be-8eb6-400c-93bc-0f73a09c2df7
 # ╟─0ce9ed22-5104-4778-917f-48e8485f9bda
 # ╟─87d02650-1355-4b3c-b7c7-2a618810f815
 # ╟─f24801ac-bbc4-4548-b1c2-8515ab22f1ff

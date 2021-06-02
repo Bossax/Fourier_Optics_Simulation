@@ -13,33 +13,17 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 03209d58-df73-4513-8677-46bab1ab424a
-# this part is for binder setup
-begin
-	
-	# We set up a new environment for this notebook
-	import Pkg
-	Pkg.activate(mktempdir())
-	
-	
-	# This is how you add a package:
-	Pkg.add("PlutoUI")
-	Pkg.add("Plots")
-	Pkg.add("FFTW")
-	Pkg.add("DSP")
-	
-end
-
 # ╔═╡ 0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # import modules
 begin 
 	using Plots
 	using FFTW
+	using FileIO
 	using PlutoUI
 	import DSP: unwrap
 	using Plots.PlotMeasures
 
-	plotly()
+	gr()
 end
 
 # ╔═╡ 655d730b-6dee-45f0-85b1-db04b590a9d8
@@ -66,6 +50,26 @@ U_2(x,y) = F^{-1}[F[U_1(x,y)]F[h(x,y)]]\\\\
 
 \end{gather}$
 "
+
+# ╔═╡ 03209d58-df73-4513-8677-46bab1ab424a
+# this part is for binder setup
+
+"""
+begin
+	
+	# We set up a new environment for this notebook
+	import Pkg
+	Pkg.activate(mktempdir())
+	
+	
+	# This is how you add a package:
+	Pkg.add("PlutoUI")
+	Pkg.add("Plots")
+	Pkg.add("FFTW")
+	Pkg.add("DSP")
+	
+end
+"""
 
 # ╔═╡ 773c805e-65cc-4890-9da6-1108273490d9
 md"
@@ -96,7 +100,7 @@ function propTF(u1, L, λ, z)
 	H = fftshift(H)
 	U1 = ifft(ifftshift(u1))
 	
-	return ifftshift(ifft(H.*U1))
+	return reverse(ifftshift(ifft(H.*U1)), dims = 1)
 	
 	
 end
@@ -130,7 +134,7 @@ function propIR(u1, L, λ, z)
 	U1 = fftshift(fft(u1))
 	
 		
-	return ifftshift(ifft(ifftshift(H.*U1)))
+	return reverse(ifftshift(ifft(ifftshift(H.*U1))), dims = 1)
 	
 end
 
@@ -402,7 +406,7 @@ md"
 Fresnel Number <<1
 
 $\begin{gather}
-U_2(x,y) = \frac{exp(jkz)}{j\lambda z} exp[j\frac{k}{2z}(x_2^2 + y_2^2)] \times \iint U_1(x_1,y_1)exp[-j\frac{2\pi}{\lambda z}(x_2x_1 + y_2y_1)]
+U_2(x,y) = \frac{e^{jkz}}{j\lambda z} exp[j\frac{k}{2z}(x_2^2 + y_2^2)] \times \iint U_1(x_1,y_1)exp[-j\frac{2\pi}{\lambda z}(x_2x_1 + y_2y_1)]
 \end{gather}$
 
 The side lengths of the source plane and the observation plane are not generally the same.
@@ -488,6 +492,183 @@ let
 	
 end
 
+# ╔═╡ f3e8b879-e5c8-4356-9061-8499d3816ee9
+md"
+## Tilt
+
+
+"
+
+# ╔═╡ f6999caa-6961-4ce1-a23f-dbcbe75f512d
+function tilt(uin, L, λ, α, θ)
+	"""
+	tilt phase front
+	inputs
+	1. input field - uin
+	2. side length - L 
+	3. wave length - λ 
+	4. tilt angle = α (deg)
+	5. Rotational angle (optical axis) = θ (deg)
+	
+	output
+	tilted field
+	"""
+	α = deg2rad(α)
+	θ = deg2rad(θ)
+	
+	j = im
+	M, N = size(uin)
+	dx = L/M
+	xcoord = -L/2:dx:L/2-dx
+	k = 2π/λ
+	
+	# transmittance function
+	t_a = [exp(j*k*(x*cos(θ)+y*sin(θ))*tan(-α)) for y in xcoord, x in x_coord]
+	
+	return reverse(uin.*t_a, dims = 1)
+end
+
+# ╔═╡ 93634cf2-a961-4957-abe5-212b4109815f
+let 
+	α =20e-4
+	θ = 45
+	zs_t = 2000
+	u1_t = tilt(u1, Ls, λs, α, θ)
+	I1_t = abs.(u1_t.^2)
+
+	p_phase_tilt = heatmap(x_coord,x_coord,rad2deg.(imag.(u1_t)), xlabel = "m", 							ylabel = "m", color = :redsblues, aspect_ratio = 1, xlim = 							[-0.1, 0.1], ylim = [-0.1, 0.1], cbar_title = "θ in deg", 							titlefontsize = 10,	title = "Phase of Square beam (zoomed)");
+	
+	u2_t_TF = propTF(u1_t, Ls, λs, zs_t)
+	
+	# irridance
+	p_obs_plane_tilt = heatmap(x_coord,x_coord,abs.(u2_t_TF.^2), xlabel = "m", 
+					ylabel = "m", color = :grays, aspect_ratio = 1, cbar = false,
+					title = "Irridance", titlefontsize = 10, 
+					lims = (x_coord[1], x_coord[end]))
+	
+	plot(p_phase_tilt,p_obs_plane_tilt, layout = (1,2),	size = (600,400), leg = false)
+	
+	
+	 
+	
+end 
+
+# ╔═╡ d0f8bb33-4903-424d-9dc4-c35380bd0b7c
+md"
+## Focus
+"
+
+# ╔═╡ 90a34db4-99ca-4fa4-bf2c-61830846388f
+function focus(uin,L,λ,zf)
+	"""
+	Focusing and defocusing
+	Converging and diverging wavefront
+	
+	inputs
+	1. source field - uin
+	2. side length - L
+	3. wave length - λ
+	4. focus/defocus length from the source plane - zf (zf positive is focus)
+
+	output
+	converging/diverging source field
+	"""
+	
+	j = im
+	M, N = size(uin)
+	dx = L/M
+	xcoord = -L/2:dx:L/2-dx
+	k = 2π/λ
+	
+	# transmittance function
+	t = [exp(-j*k/(2zf)*(x^2+y^2)) for y in x_coord, x in x_coord]
+	
+	return reverse(uin.*t, dims = 1)
+end
+
+# ╔═╡ 7cccaf7f-0456-4b13-adc4-e509b0db3f62
+md"
+$\begin{gather}
+t_l(x,y) = exp[-j\frac{k}{2f}(x^2+y^2)]
+\end{gather}$
+
+*f* is positive for converging lens and negative for diverging lens \
+This formula is a quadratic approximation of a spherical wave (based on paraxial assumption) \
+Surfaces of the lens are usually made asperhical to correct aberrations to make the outgoing waves most spherical
+"
+
+# ╔═╡ a95dbaa1-4fbf-40fb-b63b-8616a45de8d0
+let 
+	zs_f = 2000
+	zs_df = -2000
+	u1_f = focus(u1, Ls, λs, zs_f)
+	u1_df = focus(u1, Ls, λs, zs_df)
+
+	p_phase_focus = heatmap(x_coord,x_coord,rad2deg.(imag.(u1_f)), xlabel = "m", 							ylabel = "m", color = :redsblues, aspect_ratio = 1, xlim = 							[-0.1, 0.1], ylim = [-0.1, 0.1], cbar_title = "θ in deg", 							titlefontsize = 10,	
+						title = "Phase of Converging\n Square beam (zoomed)");
+	p_phase_defocus = heatmap(x_coord,x_coord,rad2deg.(imag.(u1_df)), xlabel = "m", 							ylabel = "m", color = :redsblues, aspect_ratio = 1, 
+							xlim = [-0.1, 0.1], ylim = [-0.1, 0.1],
+							cbar_title = "θ in deg", titlefontsize = 10,	
+						title = "Phase of Diverging\n Square beam (zoomed)");
+	
+	
+	u2_f_TF = propTF(u1_f, Ls, λs, zs)
+	u2_df_TF = propTF(u1_df, Ls, λs, zs)
+	
+	# resultant fields
+	p_obs_plane_focus = heatmap(x_coord,x_coord,abs.(u2_f_TF.^2), xlabel = "m", 
+					ylabel = "m", color = :grays, aspect_ratio = 1, cbar = false,
+					title = "Irridance", titlefontsize = 10, 
+					lims = (x_coord[1], x_coord[end]))
+	p_obs_plane_defocus = heatmap(x_coord,x_coord,abs.(u2_df_TF.^2), xlabel = "m", 
+					ylabel = "m", color = :grays, aspect_ratio = 1, cbar = false,
+					title = "Irridance", titlefontsize = 10, 
+					lims = (x_coord[1], x_coord[end]))
+	
+	#plots
+	plot(p_phase_focus, p_obs_plane_focus, p_phase_defocus, p_obs_plane_defocus, 					layout = (2,2),	size = (600,800), leg = false)
+	
+	
+end
+
+# ╔═╡ c23720e7-5e67-4737-9036-dd7755b3ce51
+md"
+## Coherent Imaging System
+
+Paraxial f number
+
+$\begin{gather}
+f/ \# = \frac{z}{D_{ExP}}
+\end{gather}$
+
+Cut-off frequency of a circular aperture
+
+$\begin{gather} f_0 = \frac{1}{2\lambda (f/\#)} \end{gather}$
+
+
+Nyquist frequency
+
+$\begin{gather}
+f_N = \frac{1}{2\Delta u}
+\newline \newline
+f_o \le \frac{f_N}{2}
+\newline
+\end{gather}$
+
+Sampling criterion
+
+$\begin{gather}
+\Delta u \le \frac{\lambda (f/\#)}{2}
+\end{gather}$
+
+"
+
+# ╔═╡ 6b51d4f3-1fe9-4e1f-803c-81f21409c63a
+begin
+	A = load("usaf_test_chart.jpeg")
+	@show A
+end
+
 # ╔═╡ 0ce9ed22-5104-4778-917f-48e8485f9bda
 md"
 ---
@@ -528,22 +709,19 @@ begin
 	
 end
 
-# ╔═╡ 7693fcc0-927e-479e-a7f0-b93028ad26f4
-length(s)
-
 # ╔═╡ Cell order:
 # ╟─655d730b-6dee-45f0-85b1-db04b590a9d8
 # ╠═03209d58-df73-4513-8677-46bab1ab424a
 # ╠═0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # ╟─773c805e-65cc-4890-9da6-1108273490d9
-# ╠═9bbf46ca-75d0-4d45-8a38-a6635e3a5ce2
+# ╟─9bbf46ca-75d0-4d45-8a38-a6635e3a5ce2
 # ╟─ae2c8d6a-c89f-4ba2-94de-a175c0f48d1a
-# ╠═0c6f7289-b243-4f97-bdb8-b60d85a16eff
+# ╟─0c6f7289-b243-4f97-bdb8-b60d85a16eff
 # ╟─38008805-19a6-4150-b231-9c17aa5f5e3a
 # ╟─bd6d5054-e2c0-45a9-aecf-60c51790569f
 # ╟─c008a685-9d95-4a15-9430-e69d0cd9d6c9
-# ╠═e6f8522f-a665-4b81-8c43-f91f2807549e
-# ╠═15ddd06a-cf27-4333-a06b-ec1c7b17c197
+# ╟─e6f8522f-a665-4b81-8c43-f91f2807549e
+# ╟─15ddd06a-cf27-4333-a06b-ec1c7b17c197
 # ╟─2a995bf5-125c-44d9-ac24-26b40065d4ca
 # ╟─814e7c4c-24a1-4c4a-92e5-4dcb1d9ddc97
 # ╟─67e7a36f-2e64-4efa-9c81-c2908d1f5b28
@@ -557,12 +735,20 @@ length(s)
 # ╟─4770d444-db59-4e85-baa0-0d54834afbcd
 # ╟─d4af9fc6-e198-43bc-8847-5c2fe7b2a590
 # ╟─d0aa8b36-1332-47c0-8be9-d33f58395d22
-# ╠═950176a0-b190-4908-9561-a7f1cc1949b0
+# ╟─950176a0-b190-4908-9561-a7f1cc1949b0
 # ╟─f7c30403-7716-42a1-b7a9-68884456a249
 # ╟─103ad2be-8eb6-400c-93bc-0f73a09c2df7
+# ╟─f3e8b879-e5c8-4356-9061-8499d3816ee9
+# ╟─f6999caa-6961-4ce1-a23f-dbcbe75f512d
+# ╟─93634cf2-a961-4957-abe5-212b4109815f
+# ╟─d0f8bb33-4903-424d-9dc4-c35380bd0b7c
+# ╟─90a34db4-99ca-4fa4-bf2c-61830846388f
+# ╠═7cccaf7f-0456-4b13-adc4-e509b0db3f62
+# ╟─a95dbaa1-4fbf-40fb-b63b-8616a45de8d0
+# ╠═c23720e7-5e67-4737-9036-dd7755b3ce51
+# ╠═6b51d4f3-1fe9-4e1f-803c-81f21409c63a
 # ╟─0ce9ed22-5104-4778-917f-48e8485f9bda
 # ╟─87d02650-1355-4b3c-b7c7-2a618810f815
 # ╟─f24801ac-bbc4-4548-b1c2-8515ab22f1ff
 # ╠═aedae1ce-87a9-4d26-b232-c392c81c8814
 # ╠═afae35d2-3960-432d-b6fc-f2b321fd1dd4
-# ╠═7693fcc0-927e-479e-a7f0-b93028ad26f4

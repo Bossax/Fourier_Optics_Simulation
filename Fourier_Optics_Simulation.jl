@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.4
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -18,7 +18,7 @@ end
 begin 
 	using Plots
 	using FFTW
-	using FileIO
+	using Images
 	using PlutoUI
 	import DSP: unwrap
 	using Plots.PlotMeasures
@@ -663,10 +663,52 @@ $\begin{gather}
 
 "
 
+# ╔═╡ 2904d129-0e1a-4a3e-b1dd-8d70b8952ffd
+md"
+### USAF 1951 resolution test chart 
+"
+
 # ╔═╡ 6b51d4f3-1fe9-4e1f-803c-81f21409c63a
 begin
-	A = load("usaf_test_chart.jpeg")
-	@show A
+	usaf= load("usaf_test_chart.jpeg")
+	Ig = Float64.(Gray.(usaf));
+	ug = sqrt.(Ig);
+	usaf
+end
+
+# ╔═╡ 91b64b86-5516-4248-9455-4f3eee7984ea
+begin	
+	(res_x,res_y) = size(usaf)
+	@show "Image resolution $res_x × $res_y pixels"
+ end
+
+# ╔═╡ 1be7cf2d-9fce-4c1b-ac86-7818e1fd5a33
+md"
+Simulate an imaging system consisting of a lens with a diameter of 12.5 mm and a focal length of 125 mm. The LED has 0.5 $\mu$m wave length illuminating an object of USAF 1951 test chart as displayed above 
+"
+
+# ╔═╡ 33249d98-2416-4013-86d7-8cbfb2a0f9af
+let 
+	
+	f = 125e-3
+	d = 12.5e-3
+	λ = 0.5e-6
+	f_num = f/d
+	Δu = λ*f_num/2
+
+	L = res_x*Δu
+	L_dis =round(L*1e3,sigdigits= 4)
+	
+ 	u = -L/2:Δu:L/2 - Δu
+	v = u
+	
+	heatmap(u.*1000,v.*1000,reverse(Ig, dims = 1 ), xlabel = "mm", ylabel = 			"mm",color = :grays, aspect_ratio = 1, cbar = false,
+			title = "Ideal Image", titlefontsize = 10,
+			lims = (u[1], v[end]))
+	
+	
+	# @show "Sampling period = $(Δu*1e6) μm, Side length = $L_dis mm"
+	
 end
 
 # ╔═╡ 0ce9ed22-5104-4778-917f-48e8485f9bda
@@ -711,7 +753,7 @@ end
 
 # ╔═╡ Cell order:
 # ╟─655d730b-6dee-45f0-85b1-db04b590a9d8
-# ╠═03209d58-df73-4513-8677-46bab1ab424a
+# ╟─03209d58-df73-4513-8677-46bab1ab424a
 # ╠═0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # ╟─773c805e-65cc-4890-9da6-1108273490d9
 # ╟─9bbf46ca-75d0-4d45-8a38-a6635e3a5ce2
@@ -743,10 +785,14 @@ end
 # ╟─93634cf2-a961-4957-abe5-212b4109815f
 # ╟─d0f8bb33-4903-424d-9dc4-c35380bd0b7c
 # ╟─90a34db4-99ca-4fa4-bf2c-61830846388f
-# ╠═7cccaf7f-0456-4b13-adc4-e509b0db3f62
+# ╟─7cccaf7f-0456-4b13-adc4-e509b0db3f62
 # ╟─a95dbaa1-4fbf-40fb-b63b-8616a45de8d0
-# ╠═c23720e7-5e67-4737-9036-dd7755b3ce51
+# ╟─c23720e7-5e67-4737-9036-dd7755b3ce51
+# ╟─2904d129-0e1a-4a3e-b1dd-8d70b8952ffd
 # ╠═6b51d4f3-1fe9-4e1f-803c-81f21409c63a
+# ╟─91b64b86-5516-4248-9455-4f3eee7984ea
+# ╟─1be7cf2d-9fce-4c1b-ac86-7818e1fd5a33
+# ╠═33249d98-2416-4013-86d7-8cbfb2a0f9af
 # ╟─0ce9ed22-5104-4778-917f-48e8485f9bda
 # ╟─87d02650-1355-4b3c-b7c7-2a618810f815
 # ╟─f24801ac-bbc4-4548-b1c2-8515ab22f1ff

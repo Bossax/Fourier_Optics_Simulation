@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -18,7 +18,7 @@ end
 
 # ╔═╡ 2ef1f8ae-ca62-11eb-01c0-95c668069bb0
 md"
-## Coherent Imaging System
+# Coherent Imaging System:
 
 Paraxial f number
 
@@ -95,8 +95,8 @@ let
 end
 
 # ╔═╡ Cell order:
-# ╟─9a879c8d-96c6-4d77-9df8-38530bfa62ce
-# ╟─2ef1f8ae-ca62-11eb-01c0-95c668069bb0
+# ╠═9a879c8d-96c6-4d77-9df8-38530bfa62ce
+# ╠═2ef1f8ae-ca62-11eb-01c0-95c668069bb0
 # ╟─d951f366-f8d5-4d2b-b2ea-7f832733f5d1
 # ╟─45241e51-d53e-40fa-b306-236ed05901e9
 # ╟─62baadb6-9ef8-4c3d-b447-e9622550953a

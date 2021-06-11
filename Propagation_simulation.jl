@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -330,6 +330,55 @@ md"
 ## Effect of sampling interval, propagation distance, and aperture size
 "
 
+# ╔═╡ 17a76d8f-46f6-4707-b9fa-6ece2e811baf
+md"
+### Sampling 
+
+- Sampling rate is the spacing between 2 adjacents samples ``\frac{1}{Δx}``. It depends on the choice of discretization.\
+
+- Frequency sample interval, on the other hand, depends on the size of the spatail domain ``Δf = \frac{1}{L}``. Zero-padding the domain will interpolate the finer frequencies, but not adding information. \
+
+- Nyquist frequency is half of the sampling rate = ``\frac{1}{2Δx}``. \
+
+### Sampling criteria
+
+\
+**Fresnel propagation**
+
+The sample interval is constrained by the spatial chirp function of the Fresnel Transfer Funciton. The phase change between 2 adjacents frequency sampls *cannot be grater than π*. Thus
+
+$\begin{gather}
+
+
+	\Delta f \leq\frac{1}{\lambda z 2|f_{max}|} \newline \newline
+
+
+	\textrm{and  }
+
+	\Delta f = 1/L \textrm{ ; }
+
+
+	f_{max} = 1/2\Delta x \newline\newline
+
+
+	\mathbf{\Delta x \geq \frac{\lambda z}{L}}
+
+\end{gather}$
+
+- Short distance propagation tends to be oversampling, while long distance propagation is the opposite.
+- Oversampling of the TF causes the inverse FFT of **H** (impulse response) to undulate and truncated to the width of ``\lambda z/Δx``  instead of having a constant amplitude over the range of the spatial domian. This results in accurate result on the observation plane within D+``\lambda z/Δx``  where D is the support of the source field
+- Undersampling leads to alisaing. The TF is truncated and periodic. The bandwidth of the TF is reduced to $L/2\lambda z$. In other word, only this ``B`` of the source field is observed on the observation plane ``B \leq \frac{L}{2\lambda z}``
+
+For the impulse response, the criterion is the opposite
+
+$\begin{gather}
+\mathbf{\Delta x \leq \frac{\lambda z}{L}}
+\end{gather}$
+
+The effects of oversampling and undersampling are comparable to the results from TF.
+
+"
+
 # ╔═╡ f56f2cf9-2828-4ec1-b7d7-f27fbe041df2
 begin
 	z_slider = @bind z_interact Slider(1000:1000:20000, default=2000, show_value=true)
@@ -351,9 +400,9 @@ end
 
 # ╔═╡ 4770d444-db59-4e85-baa0-0d54834afbcd
 let
-	F_number = round(w_interact^2/(λs*z_interact), sigdigits=2)
+	Fresnel_number = round(w_interact^2/(λs*z_interact), sigdigits=2)
 	Markdown.MD(Markdown.Admonition("Fresnel Number", "Fresnel Number",
-					[md" `` \frac{w^2}{\lambda z}`` =  $F_number , where ``w`` is half-width of the square"]))
+					[md" `` \frac{w^2}{\lambda z}`` =  $Fresnel_number , where ``w`` is half-width of the square"]))
 	
 end
 
@@ -403,15 +452,34 @@ md"
 ---
 ### Fraunhofer diffraction
 
-Fresnel Number <<1
+Fresnel Number <<1, long distance propagation
 
 $\begin{gather}
-U_2(x,y) = \frac{e^{jkz}}{j\lambda z} exp[j\frac{k}{2z}(x_2^2 + y_2^2)] \times \iint U_1(x_1,y_1)exp[-j\frac{2\pi}{\lambda z}(x_2x_1 + y_2y_1)]
+z \gg \frac{k(\xi^2 +\eta^2)}{2}
+\end{gather}$
+
+The chirp term inside the integral of the Fresnel integral equation is dropped, resulting in
+
+$\begin{gather}
+U_2(x,y) = \frac{e^{jkz}}{j\lambda z} exp[j\frac{k}{2z}(x^2 + y^2)] \times \iint U_1(\xi,\eta)exp[-j\frac{2\pi}{\lambda z}(x\xi + y\eta)] d\xi d\eta
+\end{gather}$
+
+with variable subsitutions
+
+$\begin{gather}
+f_\xi -> \frac{x}{\lambda z}, f_\eta -> \frac{y}{\lambda z}
 \end{gather}$
 
 The side lengths of the source plane and the observation plane are not generally the same.
 
-`` L_2 = \frac{\lambda z}{\Delta x} ``, and `` \Delta x_2 = \frac{\lambda z}{L_1}``
+From the relations above, $\lambda z f_\xi = x$ and $\lambda z f_\eta = y$
+and the resultant **side length** and the **sample interval** of the observation plane
+
+$\begin{gather}
+L_2 = \frac{\lambda z}{\Delta \xi}  \text{ and } \Delta x = \frac{\lambda z}{L_1}
+\end{gather}$
+
+Therefore, the resulting field is scaled according to the sampling of the source field
 
 "
 
@@ -651,6 +719,7 @@ end
 # ╟─d371a0a7-c9d0-459b-bcfe-8e83cc400d43
 # ╟─eaf4589e-76f0-4b31-9fd6-188560fd7e3f
 # ╟─e6f7007d-bbd5-42d2-a3c9-3b60acd83d33
+# ╟─17a76d8f-46f6-4707-b9fa-6ece2e811baf
 # ╟─f56f2cf9-2828-4ec1-b7d7-f27fbe041df2
 # ╟─9e90c16c-5142-42f9-87ac-3958a2ce1bfb
 # ╟─b0357d32-6669-4f2f-aa61-1a81c9612922

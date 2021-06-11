@@ -439,7 +439,7 @@ function propFF(u1, L1, λ, z)
 	dx2 = λ*z/L1
 	
 	x_coord2 = -L2/2:dx2:L2/2-dx2	# spatial coordinate
-	c = [1/(j*λ*z)*exp(j*k/(2*z)*(x^2 +y^2)) for x in x_coord2, y in x_coord2]
+	c = [1/(j*λ*z)*exp(j*k/(2*z)*(x^2 +y^2)) for x in x_coord2, y in x_coord2] # amplitude term
 	
 	return  (c.*ifftshift(fft(u1))*dx1^2, L2)
 	
@@ -631,130 +631,10 @@ let
 	
 end
 
-# ╔═╡ c23720e7-5e67-4737-9036-dd7755b3ce51
-md"
-## Coherent Imaging System
-
-Paraxial f number
-
-$\begin{gather}
-f/ \# = \frac{z}{D_{ExP}}
-\end{gather}$
-
-Cut-off frequency of a circular aperture
-
-$\begin{gather} f_0 = \frac{1}{2\lambda (f/\#)} \end{gather}$
-
-
-Nyquist frequency
-
-$\begin{gather}
-f_N = \frac{1}{2\Delta u}
-\newline \newline
-f_o \le \frac{f_N}{2}
-\newline
-\end{gather}$
-
-Sampling criterion
-
-$\begin{gather}
-\Delta u \le \frac{\lambda (f/\#)}{2}
-\end{gather}$
-
-"
-
-# ╔═╡ 2904d129-0e1a-4a3e-b1dd-8d70b8952ffd
-md"
-### USAF 1951 resolution test chart 
-"
-
-# ╔═╡ 6b51d4f3-1fe9-4e1f-803c-81f21409c63a
-begin
-	usaf= load("usaf_test_chart.jpeg")
-	Ig = Float64.(Gray.(usaf));
-	ug = sqrt.(Ig);
-	usaf
-end
-
-# ╔═╡ 91b64b86-5516-4248-9455-4f3eee7984ea
-begin	
-	(res_x,res_y) = size(usaf)
-	@show "Image resolution $res_x × $res_y pixels"
- end
-
-# ╔═╡ 1be7cf2d-9fce-4c1b-ac86-7818e1fd5a33
-md"
-Simulate an imaging system consisting of a lens with a diameter of 12.5 mm and a focal length of 125 mm. The LED has 0.5 $\mu$m wave length illuminating an object of USAF 1951 test chart as displayed above 
-"
-
-# ╔═╡ 33249d98-2416-4013-86d7-8cbfb2a0f9af
-let 
-	
-	f = 125e-3
-	d = 12.5e-3
-	λ = 0.5e-6
-	f_num = f/d
-	Δu = λ*f_num/2
-
-	L = res_x*Δu
-	L_dis =round(L*1e3,sigdigits= 4)
-	
- 	u = -L/2:Δu:L/2 - Δu
-	v = u
-	
-	heatmap(u.*1000,v.*1000,reverse(Ig, dims = 1 ), xlabel = "mm", ylabel = 			"mm",color = :grays, aspect_ratio = 1, cbar = false,
-			title = "Ideal Image", titlefontsize = 10,
-			lims = (u[1], v[end]))
-	
-	
-	# @show "Sampling period = $(Δu*1e6) μm, Side length = $L_dis mm"
-	
-end
-
-# ╔═╡ 0ce9ed22-5104-4778-917f-48e8485f9bda
-md"
----
-"
-
-# ╔═╡ 87d02650-1355-4b3c-b7c7-2a618810f815
-md"
-## Notes on FFT
-"
-
-# ╔═╡ f24801ac-bbc4-4548-b1c2-8515ab22f1ff
-begin
-	sig = hcat(zeros(1,10),ones(1,20))'
-	sig = vcat(sig,zeros(10,1))
-	
-	p1 = plot(sig, line = :stem, marker = :circle, c = :red, title = "unshifted", xlabel = "n", ylabel = "f(x)")
-	p2 = plot(fftshift(sig), line = :stem, marker = :circle, c = :blue, title = "shifted", xlabel = "n", ylabel = "f(x)")
-
-	p = plot(p1,p2,layout = (2,1), size = (600,500), leg = false)
-end
-
-# ╔═╡ aedae1ce-87a9-4d26-b232-c392c81c8814
-begin
-	S1 = fft(sig)
-	r1 = plot(0:length(S1)-1,abs.(S1), line = :stem, marker = :circle, c = :red, title = "Magnitude spectrum: unshifted")
-	r2 = plot(-length(S1)/2:length(S1)/2-1,abs.(fftshift(S1)), line = :stem, marker = :circle, c = :blue, title = "Magnitude spectrum: shifted")
-	plot(r1,r2,layout=(2,1), size = (500,700), leg = false)
-	
-end
-
-# ╔═╡ afae35d2-3960-432d-b6fc-f2b321fd1dd4
-begin
-	L_s1 = length(S1)
-	ind = convert(Int64,L_s1/2-1)
-	S1_folded = vcat(S1[1] ,S1[2:ind]*2)
-	s = ifft(ifftshift(fftshift(S1)))		# unshifting
-	plot(real(s),line = :stem,marker = :circle, size = (600,300), leg = false)
-	
-end
-
 # ╔═╡ Cell order:
 # ╟─655d730b-6dee-45f0-85b1-db04b590a9d8
 # ╟─03209d58-df73-4513-8677-46bab1ab424a
-# ╠═0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
+# ╟─0e7ca6ce-ae37-11eb-3ec5-099b945b19c4
 # ╟─773c805e-65cc-4890-9da6-1108273490d9
 # ╟─9bbf46ca-75d0-4d45-8a38-a6635e3a5ce2
 # ╟─ae2c8d6a-c89f-4ba2-94de-a175c0f48d1a
@@ -787,14 +667,3 @@ end
 # ╟─90a34db4-99ca-4fa4-bf2c-61830846388f
 # ╟─7cccaf7f-0456-4b13-adc4-e509b0db3f62
 # ╟─a95dbaa1-4fbf-40fb-b63b-8616a45de8d0
-# ╟─c23720e7-5e67-4737-9036-dd7755b3ce51
-# ╟─2904d129-0e1a-4a3e-b1dd-8d70b8952ffd
-# ╠═6b51d4f3-1fe9-4e1f-803c-81f21409c63a
-# ╟─91b64b86-5516-4248-9455-4f3eee7984ea
-# ╟─1be7cf2d-9fce-4c1b-ac86-7818e1fd5a33
-# ╠═33249d98-2416-4013-86d7-8cbfb2a0f9af
-# ╟─0ce9ed22-5104-4778-917f-48e8485f9bda
-# ╟─87d02650-1355-4b3c-b7c7-2a618810f815
-# ╟─f24801ac-bbc4-4548-b1c2-8515ab22f1ff
-# ╠═aedae1ce-87a9-4d26-b232-c392c81c8814
-# ╠═afae35d2-3960-432d-b6fc-f2b321fd1dd4

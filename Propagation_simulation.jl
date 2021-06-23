@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.8
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -20,6 +20,7 @@ begin
 	using FFTW
 	using Images
 	using PlutoUI
+	using OffsetArrays
 	import DSP: unwrap
 	using Plots.PlotMeasures
 
@@ -81,7 +82,7 @@ function propTF(u1, L, λ, z)
 	"""
 	Input
 	1. source field: u1
-	2. sidde length of the plane: L
+	2. side length of the plane: L
 	3. wavelength: λ
 	4. propagation distance: z
 	
@@ -98,7 +99,7 @@ function propTF(u1, L, λ, z)
 	f_coord = -1/(2*dx):1/L:1/(2*dx)-1/L 	# frequency coordinate
 	H = [exp(-j*π*λ*z*(fx^2 + fy^2)) for fx in f_coord, fy in f_coord]
 	H = fftshift(H)
-	U1 = ifft(ifftshift(u1))
+	U1 = fft(ifftshift(u1))
 	
 	return reverse(ifftshift(ifft(H.*U1)), dims = 1)
 	
@@ -464,7 +465,7 @@ $\begin{gather}
 U_2(x,y) = \frac{e^{jkz}}{j\lambda z} exp[j\frac{k}{2z}(x^2 + y^2)] \times \iint U_1(\xi,\eta)exp[-j\frac{2\pi}{\lambda z}(x\xi + y\eta)] d\xi d\eta
 \end{gather}$
 
-with variable subsitutions
+with variable subsitutions (same as Fresnel Integral)
 
 $\begin{gather}
 f_\xi -> \frac{x}{\lambda z}, f_\eta -> \frac{y}{\lambda z}
@@ -503,6 +504,7 @@ function propFF(u1, L1, λ, z)
 	dx1= L1/M 				#sampling distance
 	k = 2π/λ 				#wave number
 	
+	# observation plane
 	L2 = λ*z/dx1
 	dx2 = λ*z/L1
 	
@@ -522,14 +524,14 @@ let
 	
 	dx2 = λs*zs/Ls
 	x_coordFF = -L2/2:dx2:L2/2-dx2
-	# irridance
+	# Field
 	plt1 = heatmap(x_coordFF,x_coordFF,abs.(u2), xlabel = "m", ylabel = "m",
 			color = :grays, aspect_ratio = 1, cbar = false,
 			title = "Field", titlefontsize = 10,
 			lims = (x_coordFF[1], x_coordFF[end]))
 	# magnitude x section
 	plt2 = plot(x_coordFF, abs.(u2[convert(Int64,Ns/2+1),:]),
-				xlabel = "m", ylabel = "irridance",
+				xlabel = "m", ylabel = "Field Mag",
 				title = "Magnitude cross-section", titlefontsize = 10)
 	
 	plot(plt1,plt2, layout = (1,2),	size = (500,300), leg = false)
@@ -537,28 +539,59 @@ let
 end
 
 # ╔═╡ 103ad2be-8eb6-400c-93bc-0f73a09c2df7
-let
+begin
 
-	u1FFc = circle(Lc,Nc,0.011,0.011);
+	u1FFc = circle(Lc,Nc,0.011);
 	
-	(u2c,L2c)= propFF(u1FFc,Lc, λc, zc)
+	(u2c,L2c)= propFF(u1FFc,Lc, λc,zc)
 
-	dxc = λc*zc/Lc
-	x_coordFF = -L2c/2:dxc:L2c/2-dxc
+	dxc2 = λc*zc/Lc
+	x_coordFF = -L2c/2:dxc2:L2c/2-dxc2
 	
-	# irridance
+	# Field
 	plt1 = heatmap(x_coordFF,x_coordFF,abs.(u2c), xlabel = "m", ylabel = "m",
 			color = :grays, aspect_ratio = 1, cbar = false,
 			title = "Field", titlefontsize = 10,
 			lims = (x_coordFF[1], x_coordFF[end]))
 	# magnitude x section
-	plt2 = plot(x_coordFF, abs.(u2c[convert(Int64,Nc/2+1),:]),
-				xlabel = "m", ylabel = "irridance",
+	mag =abs.(u2c[convert(Int64,Nc/2+1),:])
+	plt2 = plot(x_coordFF, mag, xlabel = "m", ylabel = "Field Mag",
 				title = "Magnitude cross-section", titlefontsize = 10)
+	
+	# find Airy radius
+	len_mag = length(mag)
+	h_len = convert(Int32,len_mag/2)
+	mag_centered = OffsetArray(mag,-h_len:h_len-1)
+	x_coordFF_cenetred = OffsetArray(x_coordFF,-h_len:h_len-1)
+	
+	# truncation
+	truncated_mag = mag_centered[-40:40]
+	min_pos = argmin(truncated_mag) -41
+	
+	plt2 = plot!([x_coordFF_cenetred[-min_pos],x_coordFF_cenetred[min_pos]],[mag_centered[-min_pos],mag_centered[min_pos]], seriestype = :scatter, shape = :circle)
+	
+	numer_airy_r = x_coordFF_cenetred[-min_pos];
 	
 	plot(plt1,plt2, layout = (1,2),	size = (500,300), leg = false)
 	
+
 end
+
+# ╔═╡ 7c379d8f-8a99-4393-b747-7135d05c90bc
+let
+	f_num = zc/(0.011*2)
+	anal_airy_r = round(1.22*λc*f_num, sigdigits = 2)	
+	@show "Numerical Airy radius = $numer_airy_r m; Analytical Airy radius = $anal_airy_r m"
+	
+end
+
+
+# ╔═╡ 9c11c78d-52a8-46a8-a254-29e1a457fafc
+md"
+**Sampling**
+
+There is no chirp function invloved in the frequency domain, the sampling criterion that is applied to Fresnel TF is no applied to Fraunhofer. Only one thing left is to sample the source plane adequately to encompass the bandwidth of the source field.
+"
 
 # ╔═╡ f3e8b879-e5c8-4356-9061-8499d3816ee9
 md"
@@ -593,12 +626,12 @@ function tilt(uin, L, λ, α, θ)
 	# transmittance function
 	t_a = [exp(j*k*(x*cos(θ)+y*sin(θ))*tan(-α)) for y in xcoord, x in x_coord]
 	
-	return reverse(uin.*t_a, dims = 1)
+	return reverse(uin.*t_a, dims =2)
 end
 
 # ╔═╡ 93634cf2-a961-4957-abe5-212b4109815f
 let 
-	α =20e-4
+	α =30e-4
 	θ = 45
 	zs_t = 2000
 	u1_t = tilt(u1, Ls, λs, α, θ)
@@ -717,7 +750,7 @@ end
 # ╟─67e7a36f-2e64-4efa-9c81-c2908d1f5b28
 # ╟─795aad6e-1f7d-4a15-93d5-8325d82b4658
 # ╟─d371a0a7-c9d0-459b-bcfe-8e83cc400d43
-# ╟─eaf4589e-76f0-4b31-9fd6-188560fd7e3f
+# ╠═eaf4589e-76f0-4b31-9fd6-188560fd7e3f
 # ╟─e6f7007d-bbd5-42d2-a3c9-3b60acd83d33
 # ╟─17a76d8f-46f6-4707-b9fa-6ece2e811baf
 # ╟─f56f2cf9-2828-4ec1-b7d7-f27fbe041df2
@@ -729,6 +762,8 @@ end
 # ╟─950176a0-b190-4908-9561-a7f1cc1949b0
 # ╟─f7c30403-7716-42a1-b7a9-68884456a249
 # ╟─103ad2be-8eb6-400c-93bc-0f73a09c2df7
+# ╟─7c379d8f-8a99-4393-b747-7135d05c90bc
+# ╟─9c11c78d-52a8-46a8-a254-29e1a457fafc
 # ╟─f3e8b879-e5c8-4356-9061-8499d3816ee9
 # ╟─f6999caa-6961-4ce1-a23f-dbcbe75f512d
 # ╟─93634cf2-a961-4957-abe5-212b4109815f

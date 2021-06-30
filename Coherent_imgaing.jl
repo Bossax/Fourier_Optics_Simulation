@@ -110,13 +110,13 @@ begin
 
 # ╔═╡ 62baadb6-9ef8-4c3d-b447-e9622550953a
 md"
-Simulate an imaging system consisting of a lens with a diameter of 1 inch and a focal length of 600 mm. The LED has 0.5 $\mu$m wave length illuminating an object of USAF 1951 test chart as displayed above. Compute samping criteria ...
+Simulate an imaging system consisting of a lens with a diameter of 1 inch and a focal length of 125 mm. The LED has 0.5 $\mu$m wave length illuminating an object of USAF 1951 test chart as displayed above. Compute samping criteria ...
 "
 
 # ╔═╡ b830713c-65e5-4b1e-9450-48e281d75cee
 begin
-	flens = 125
-	Dlens = 5
+	flens = 125 # mm
+	Dlens = 5 # mm
 	λ = 0.5e-6
 	fnum = flens/Dlens
 	max_Δu = round(λ*fnum/2, sigdigits = 3)
@@ -128,7 +128,7 @@ end
 
 # ╔═╡ bf3d3bd7-5a3a-4ffe-8ff2-fbb7b6c8a712
 md"
-Choose side length of the object plane to be 0.01 m
+Choose side length of the object plane to be 0.000625 m
 "
 
 # ╔═╡ 5a802c3f-f211-4fc4-9d73-f0641f9d3af7
@@ -138,29 +138,21 @@ begin
 	u = -L/2:Δu:(L/2)-Δu
 	
 	# # plot a physical object image
-	heatmap(u,u,reverse(Ig, dims = 1), xlabel = "m", ylabel = "m",
-			color = :grays, aspect_ratio = 1, cbar = true,
-		title = "Irridance", titlefontsize = 10, reverse = true, lims = (u[1], u[end]))
+	usaf
 	
 end
 
 # ╔═╡ 5349202f-7fd2-4915-b386-ae0a014f0dad
-md"
-Lens MTF
-"
-
-
-# ╔═╡ 79a48318-2364-4ca7-a096-4b65101139d4
 begin
-	zxp = flens	
-	wxp = Dlens/2
-	f0 = wxp/(λ*zxp)
-	fcoord = -1/(2*Δu):1/L:1/(2*Δu)
-	
-	# MTF of the exit pupil
+
+function circular_aperture(L,M,fnum)
+	# exit pupil
 	# create meshgrid
+	δu = L/M
+	f0 = (λ*fnum)^-1
+	fcoord = -1/(2*δu):1/L:1/(2*δu)
 	fgrid = [(j,i) for j in fcoord, i in fcoord]
-	H = zeros(N,N)
+	H = zeros(M,M)
 	
 	keep_coord = []
 	
@@ -176,8 +168,16 @@ begin
 		(i,j) = k
 		H[j,i] = 1
 	end
+	return H
+end
+end
+
+# ╔═╡ 79a48318-2364-4ca7-a096-4b65101139d4
+begin
 	
-	surface(fcoord./10^5,fcoord./10^5,H, xlabel = "10^5 cycle/m", ylabel = "10^5 cycle/m",zlabel = "Magnitude",color = :grays, size = (500,500), aspect_ratio = 1,
+	circular_lens1 = circular_aperture(L,M,fnum)
+	fcoord = -1/(2*Δu):1/L:1/(2*Δu)
+	surface(fcoord./10^5,fcoord./10^5,circular_lens1, xlabel = "10^5 cycle/m", ylabel = "10^5 cycle/m",zlabel = "Magnitude",color = :grays, size = (500,500), aspect_ratio = 1,
 			title = "Magnitude Transfer Function", titlefontsize = 10)
 		
 end
@@ -190,7 +190,7 @@ Resulting Image
 # ╔═╡ 6fb31ace-9784-47cf-aeb9-8a873c2a1468
 begin
 	U = fftshift(fft(ug))
-	U_filtered = U.*H
+	U_filtered = U.*circular_lens1
 	ui = ifft(U_filtered)
 # Image Amplitude Spectrum
 	p1 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U)), 
@@ -250,9 +250,9 @@ end
 # ╔═╡ d28475ba-d9aa-4ac3-a031-e7f030190943
 begin
 	
-	width_slide = @bind w_interact Slider(1:1:20, default=5, show_value=true)
+	width_slide = @bind w_interact Slider(0.8:0.2:10.0, default=5.0, show_value=true)
 	
-	md"""mechanical slit width = $width_slide mm"""
+	md"""mechanical slit width = $width_slide μm"""
 
 end
 
@@ -265,46 +265,246 @@ begin
 
 end
 
-# ╔═╡ 539c43b2-b7ab-4482-862d-c5c8b5f21989
-function slit(wide,angle,L,sample,isslit = true)
-	du = L/sample
-	u = -L/2:du:(L/2)-du
-	u_center = -L/2+du:du:L/2-2du
-	# create meshgrid of centroids
-	grid = [(j,i) for j in u_center, i in u_center]
+# ╔═╡ d64dcbe5-d78a-4bde-801c-2ce9a41adfee
+begin
+	cobs_checkbox = @bind is_cobs CheckBox(default=false)
 	
-	Slit = zeros(sample,sample)
-	if isslit & angle == 90
-		line_coord = [(0,k) for k in -sample:sample-1]
-		
-	else
-		return Slit.+1
+	md"""
+	Central obscuration $cobs_checkbox 
+	"""
+end
+
+# ╔═╡ 2641cc17-a78b-4b11-b044-a511b8f6f332
+begin
+	
+	r_slide = @bind r_interact Slider(0.4:0.2:2, default=1, show_value=true)
+	
+	md"""Central obscuration radius % = $r_slide %"""
+
+end
+
+# ╔═╡ 3ffa9119-3f42-48e6-af12-c6101293b46a
+L/2*r_interact/(λ)
+
+# ╔═╡ 8a532242-7ab9-4812-b5c8-4746e3b46a5b
+(λ*fnum_interact)^-1/1e5
+
+
+
+# ╔═╡ fea7cb46-a71d-4c45-b8ed-76e8cb2f675e
+1/(2*Δu)/1e5
+
+
+# ╔═╡ db6ecd92-e0a7-4d8d-8822-cda7dcb11026
+begin
+	r_cobs = L/2*r_interact/100*1000
+	@show "Radius = $r_cobs mm"
+end
+
+
+# ╔═╡ 539c43b2-b7ab-4482-862d-c5c8b5f21989
+function slit(width,angle,L,sample,isslit = true)
+	
+	if ~isslit
+		return ones((sample,sample))
 	end
 	
 	
+	# Domain
+	w = width/1e6
+	M = sample
+	Δx = L/M
+	x = -L/2:Δx:L/2-Δx
+	slit = zeros((M,M))
 	
+	# Line
+	mid_point = convert(Int64,M/2)
 	
+	if angle == 90
+
+		x_bound = convert(Int64,floor(w/2/Δx))
+		for k in mid_point-x_bound:mid_point+x_bound
+			slit[:,k] .= 1
+		end
+		return slit
+	elseif angle == 0
+		
+		y_bound = convert(Int64,floor(w/2/Δx))
+		for k in mid_point-y_bound:mid_point+y_bound
+			slit[k,:] .= 1
+		end
+		return slit
+		
+	end
+	
+	θ = angle
+	m = round(tan(θ/180*pi),sigdigits = 3)
+	C = M/2*(1-m)
+	cells =[]
+	
+	# indices
+	for x_now in 1:M
+		y = convert(Int64,floor(m*x_now+C))
+		if y >= 2
+			dist = [(y+g)-m*x_now for g in -1:1]
+			(~,k) = findmin(dist)
+			push!(cells,(x_now,y))
+		else
+			dist = [(y+g)-m*x_now for g in 0:1]
+			(~,k) = findmin(dist)
+			push!(cells,(x_now,y))
+		end
+
+	end
+
+	# search radius
+	opening_cells = []
+	cell_cov = convert(Int,ceil(w/2/Δx))
+	perpen_m = -1/m
+	x_dis = convert(Int,ceil(w/2*sin(θ/180*pi)/Δx))
+	for cell in cells
+		local i,j   
+		(i,j) = cell
+		intercept = j+i/m
+
+		x_lower = i-x_dis
+		x_lower < 1 ? x_lower = 1 : nothing
+		x_lower > M ? x_lower = M : nothing
+		x_upper = i+x_dis
+		x_upper < 1 ? x_upper = 1 : nothing
+		x_upper > M ? x_upper = M : nothing
+
+		y_lower = convert(Int,floor(perpen_m*x_upper + intercept) )
+		y_lower < 1 ? y_lower = 1 : nothing
+		y_lower > M ? y_lower = M : nothing
+		y_upper = convert(Int,ceil(perpen_m*x_lower + intercept))
+		y_upper < 1 ? y_upper = 1 : nothing
+		y_upper > M ? y_upper = M : nothing
+
+		# get the indices
+		(x_upper, y_lower) ∉ opening_cells ? push!(opening_cells,(x_upper, y_lower)) : nothing
+		(x_lower, y_upper) ∉ opening_cells ? push!(opening_cells,(x_lower, y_upper)) : nothing
+		#check if it hits the upper edge
+		if y_lower == M
+			break;
+		end
+
+
+	end
+	## fill in the gap
+
+	x_coord =[cell[1] for cell in opening_cells]
+	y_coord =[cell[2] for cell in opening_cells]
+	max_x = maximum(x_coord)
+
+	p_lower_y = 0
+	p_upper_y = M+1
+
+	for x_now in 1:max_x
+		cell_set = findall(h -> h == x_now, x_coord )
+		y_points = [y_coord[g] for g in cell_set]
+		upper_y = maximum(y_points)
+		lower_y = minimum(y_points)
+		y_dist = upper_y-lower_y
+
+		# case 1 the shaded area is well bounded
+		if y_dist != 0
+			for k in lower_y:upper_y
+				slit[k,x_now] = 1
+			end
+			p_upper_y = upper_y
+		    p_lower_y = lower_y
+
+		else 
+			# case 2 no lower bound
+			if p_lower_y == 1
+				for k in 1:upper_y
+					slit[k,x_now] = 1
+				end
+
+			# # case 3 no upper bound
+			elseif p_upper_y == M
+				for k in lower_y:M
+					slit[k,x_now] = 1
+				end
+			end
+
+		end
+
+
+
+	end
+	
+	return slit
 end
 
-# ╔═╡ 86f1308a-4203-4872-858b-3dc52a3c2b9b
-
+# ╔═╡ 3e5cfcac-eba3-4595-9df0-4916d24ba4b7
+function central_obsuration(L,M,flens,r_ratio, is_obs = false)
+	if ~is_obs 
+		return ones(M,M)
+	end
+	r = L/2*r_ratio
+	δu = L/M
+	u = -L/2:δu:L/2-δu
+	grids = [(j,i) for j in u, i in u]
+	cobs = ones(M,M)
+	
+	keep_coord = []
+	
+	for x in 1:size(grids,2)
+		for y in 1:size(grids,1)
+			xdist = sqrt(grids[x,y][1]^2+grids[x,y][2]^2)
+			xdist <= r ? push!(keep_coord,(x,y)) : nothing
+		end
+		
+	end
+	# assign valued to the selected coordinates
+	for k in keep_coord 
+		(i,j) = k
+		cobs[j,i] = 0
+	end
+	return cobs
+end
 
 # ╔═╡ 10f97269-6b1c-42ba-afaf-da6dd140e004
 begin
-	# visualize mechanical slit
-	#fy = tan(θ)fx
-	if is_mech_slit
-		slit_width = width_slide
-		fcoord;
-	else
-		heatmap(fcoord,fcoord,ones(length(fcoord),length(fcoord)),
-		color = :grays, aspect_ratio = 1, cbar = true,
-		title = "Mechanical Slit on Fourier Plane", titlefontsize=10,
-			xlabel = "10^5 f(cycle/m)", ylabel =  "10^5 f(cycle/m)", lims = (fcoord[1],fcoord[end]))
-		
-	end
+	slit1 = slit(w_interact,angle_interact,L,M, is_mech_slit)
+	cobs1 = central_obsuration(L,M,flens,r_interact/100, is_cobs);
+	# visualize mechanical slit 
+	p5 = heatmap(u.*1000,u.*1000,slit1, aspect_ratio = 1, color = :grays, xlabel = "mm", ylabel = "mm",
+		lims = (u[1]*1000, u[M]*1000),size = (300,250))
+	p6 = heatmap(u.*1000,u.*1000,cobs1, aspect_ratio = 1, color = :grays, xlabel = "mm", ylabel = "mm",
+		lims = (u[1]*1000, u[M]*1000),size = (300,250))
+	
+	plot(p5,p6, layout = (1,2),size = (1200,550), leg = false)
 	
 end
+
+# ╔═╡ 150ddf48-6a2d-4671-aaaa-f585eaa0a6ab
+begin
+	circular_lens_interact = circular_aperture(L,M,fnum_interact)
+	U_slit_filtered = U.*slit1.*circular_lens_interact.*cobs1
+	ui2 = ifft(U_slit_filtered)
+	# Image Amplitude Spectrum
+	p3 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U_slit_filtered)), 
+		aspect_ratio = 1,
+		color = :oslo, colorbar =true, colorbar_scales = :log10,
+		colorbar_title = "Log(magnitude)",
+		title = "Filtered Amplitude Spectrum", titlefontsize=10,
+		xlabel = "10^5 f(cycle/m)", ylabel =  "10^5 f(cycle/m)",
+		lims = (fcoord[1]./(10^5), fcoord[end]/(10^5)));
+	
+	p4 = heatmap(u.*1000,u.*1000,reverse(abs.(ui2).^2, dims = 1), xlabel = "mm",
+		ylabel = "mm", color = :grays, aspect_ratio = 1, cbar = true,
+		title = "Slit Filtered f/# = $fnum_interact", titlefontsize = 10,
+		reverse = true, lims = (u[1]*1000, u[end]*1000))
+	# resulting image
+	@show "Computing Result...."
+	
+end
+
+# ╔═╡ 189414d4-22d6-42d4-a737-fa9648385388
+plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 
 # ╔═╡ Cell order:
 # ╟─9a879c8d-96c6-4d77-9df8-38530bfa62ce
@@ -315,18 +515,26 @@ end
 # ╟─62baadb6-9ef8-4c3d-b447-e9622550953a
 # ╟─b830713c-65e5-4b1e-9450-48e281d75cee
 # ╟─bf3d3bd7-5a3a-4ffe-8ff2-fbb7b6c8a712
-# ╠═5a802c3f-f211-4fc4-9d73-f0641f9d3af7
+# ╟─5a802c3f-f211-4fc4-9d73-f0641f9d3af7
 # ╟─5349202f-7fd2-4915-b386-ae0a014f0dad
-# ╠═79a48318-2364-4ca7-a096-4b65101139d4
+# ╟─79a48318-2364-4ca7-a096-4b65101139d4
 # ╟─571b5f6a-8d83-41d6-bddf-4098c40447af
 # ╟─6fb31ace-9784-47cf-aeb9-8a873c2a1468
 # ╟─940f8715-826d-4a6d-8567-e03dbb912483
 # ╟─b2ce2744-eda6-407f-92ee-8c3e82d797e8
 # ╟─696b732a-91d7-4a8f-a9e6-51e889b77d44
-# ╟─83692351-63ec-4933-b932-ddde1908e924
+# ╠═83692351-63ec-4933-b932-ddde1908e924
 # ╟─45b832c1-191a-4254-8394-32183ee9e62c
-# ╠═d28475ba-d9aa-4ac3-a031-e7f030190943
+# ╟─d28475ba-d9aa-4ac3-a031-e7f030190943
 # ╟─ce35bdcb-094b-4e35-b574-775aee1cd042
+# ╟─d64dcbe5-d78a-4bde-801c-2ce9a41adfee
+# ╟─2641cc17-a78b-4b11-b044-a511b8f6f332
+# ╠═3ffa9119-3f42-48e6-af12-c6101293b46a
+# ╟─8a532242-7ab9-4812-b5c8-4746e3b46a5b
+# ╟─fea7cb46-a71d-4c45-b8ed-76e8cb2f675e
+# ╟─db6ecd92-e0a7-4d8d-8822-cda7dcb11026
 # ╟─539c43b2-b7ab-4482-862d-c5c8b5f21989
-# ╠═86f1308a-4203-4872-858b-3dc52a3c2b9b
-# ╠═10f97269-6b1c-42ba-afaf-da6dd140e004
+# ╟─3e5cfcac-eba3-4595-9df0-4916d24ba4b7
+# ╟─10f97269-6b1c-42ba-afaf-da6dd140e004
+# ╟─150ddf48-6a2d-4671-aaaa-f585eaa0a6ab
+# ╠═189414d4-22d6-42d4-a737-fa9648385388

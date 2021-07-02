@@ -13,6 +13,25 @@ macro bind(def, element)
     end
 end
 
+# ╔═╡ 290554ae-64b7-4588-8014-1c2e635fa78b
+# this part is for binder setup
+
+begin
+	
+	# We set up a new environment for this notebook
+	import Pkg
+	Pkg.activate(mktempdir())
+	
+	
+	# This is how you add a package:
+	Pkg.add("PlutoUI")
+	Pkg.add("Plots")
+	Pkg.add("FFTW")
+	
+	
+end
+
+
 # ╔═╡ 9a879c8d-96c6-4d77-9df8-38530bfa62ce
 # import modules
 begin 
@@ -283,18 +302,6 @@ begin
 
 end
 
-# ╔═╡ 3ffa9119-3f42-48e6-af12-c6101293b46a
-L/2*r_interact/(λ)
-
-# ╔═╡ 8a532242-7ab9-4812-b5c8-4746e3b46a5b
-(λ*fnum_interact)^-1/1e5
-
-
-
-# ╔═╡ fea7cb46-a71d-4c45-b8ed-76e8cb2f675e
-1/(2*Δu)/1e5
-
-
 # ╔═╡ db6ecd92-e0a7-4d8d-8822-cda7dcb11026
 begin
 	r_cobs = L/2*r_interact/100*1000
@@ -507,6 +514,7 @@ end
 plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 
 # ╔═╡ Cell order:
+# ╟─290554ae-64b7-4588-8014-1c2e635fa78b
 # ╟─9a879c8d-96c6-4d77-9df8-38530bfa62ce
 # ╟─2ef1f8ae-ca62-11eb-01c0-95c668069bb0
 # ╟─82e8b964-57b8-4732-985e-d251543090b7
@@ -523,15 +531,12 @@ plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 # ╟─940f8715-826d-4a6d-8567-e03dbb912483
 # ╟─b2ce2744-eda6-407f-92ee-8c3e82d797e8
 # ╟─696b732a-91d7-4a8f-a9e6-51e889b77d44
-# ╠═83692351-63ec-4933-b932-ddde1908e924
+# ╟─83692351-63ec-4933-b932-ddde1908e924
 # ╟─45b832c1-191a-4254-8394-32183ee9e62c
 # ╟─d28475ba-d9aa-4ac3-a031-e7f030190943
 # ╟─ce35bdcb-094b-4e35-b574-775aee1cd042
 # ╟─d64dcbe5-d78a-4bde-801c-2ce9a41adfee
 # ╟─2641cc17-a78b-4b11-b044-a511b8f6f332
-# ╠═3ffa9119-3f42-48e6-af12-c6101293b46a
-# ╟─8a532242-7ab9-4812-b5c8-4746e3b46a5b
-# ╟─fea7cb46-a71d-4c45-b8ed-76e8cb2f675e
 # ╟─db6ecd92-e0a7-4d8d-8822-cda7dcb11026
 # ╟─539c43b2-b7ab-4482-862d-c5c8b5f21989
 # ╟─3e5cfcac-eba3-4595-9df0-4916d24ba4b7

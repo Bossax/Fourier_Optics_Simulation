@@ -27,6 +27,7 @@ begin
 	Pkg.add("PlutoUI")
 	Pkg.add("Plots")
 	Pkg.add("FFTW")
+	Pkg.add("Images")
 	
 	
 end

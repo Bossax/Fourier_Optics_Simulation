@@ -27,6 +27,7 @@ begin
 	Pkg.add("PlutoUI")
 	Pkg.add("Plots")
 	Pkg.add("FFTW")
+	Pkg.add("FileIO")
 	
 	
 end
@@ -37,7 +38,7 @@ end
 begin 
 	using Plots
 	using FFTW
-	using Images
+	using FileIO
 	using PlutoUI
 	using Plots.PlotMeasures
 
@@ -514,8 +515,8 @@ end
 plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 
 # ╔═╡ Cell order:
-# ╟─290554ae-64b7-4588-8014-1c2e635fa78b
-# ╟─9a879c8d-96c6-4d77-9df8-38530bfa62ce
+# ╠═290554ae-64b7-4588-8014-1c2e635fa78b
+# ╠═9a879c8d-96c6-4d77-9df8-38530bfa62ce
 # ╟─2ef1f8ae-ca62-11eb-01c0-95c668069bb0
 # ╟─82e8b964-57b8-4732-985e-d251543090b7
 # ╟─d951f366-f8d5-4d2b-b2ea-7f832733f5d1

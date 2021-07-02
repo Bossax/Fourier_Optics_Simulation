@@ -17,25 +17,25 @@ end
 # this part is for binder setup
 
 begin
-	
+
 	# We set up a new environment for this notebook
 	import Pkg
 	Pkg.activate(mktempdir())
-	
-	
+
+
 	# This is how you add a package:
 	Pkg.add("PlutoUI")
 	Pkg.add("Plots")
 	Pkg.add("FFTW")
 	Pkg.add("FileIO")
-	
-	
+
+
 end
 
 
 # ╔═╡ 9a879c8d-96c6-4d77-9df8-38530bfa62ce
 # import modules
-begin 
+begin
 	using Plots
 	using FFTW
 	using FileIO
@@ -50,7 +50,7 @@ md"
 # Coherent Imaging System:
 
 
-An imaging system consists of lenses to scale object and relay it onto a plane. This operation results in magnification and diffraction which is nature of converging lenses. Since the converging lens applies phase modulation to the wavefront, with the Fresnel propagation law, the result of the imaging system involves Fraunhofer diffraction pattern, which is a Fourier Transform of the source field, esentially pupil functions if other transmittance functions from  phase modulations are excluded. 
+An imaging system consists of lenses to scale object and relay it onto a plane. This operation results in magnification and diffraction which is nature of converging lenses. Since the converging lens applies phase modulation to the wavefront, with the Fresnel propagation law, the result of the imaging system involves Fraunhofer diffraction pattern, which is a Fourier Transform of the source field, esentially pupil functions if other transmittance functions from  phase modulations are excluded.
 
 *Key concepts*
 
@@ -103,7 +103,7 @@ $\begin{gather}
 \Delta u \le \frac{\lambda (f/\#)}{2}
 \end{gather}$
 
-The size of the image on the image plane is dependent on the sample interval and the number of pixels of the object 
+The size of the image on the image plane is dependent on the sample interval and the number of pixels of the object
 
 "
 
@@ -119,11 +119,11 @@ begin
 	Ig = Float64.(Gray.(usaf))
 	ug = sqrt.(Ig)
 	@show "Loading sampled image"
-	
+
 end
 
 # ╔═╡ 45241e51-d53e-40fa-b306-236ed05901e9
-begin	
+begin
 	(M,N) = size(usaf)
 	@show "Image resolution $M × $N pixels"
  end
@@ -141,9 +141,9 @@ begin
 	fnum = flens/Dlens
 	max_Δu = round(λ*fnum/2, sigdigits = 3)
 	max_L = round(M*max_Δu, sigdigits = 3)
-	
+
 	@show "max sample interval = $max_Δu m; max side length = $max_L m"
-	
+
 end
 
 # ╔═╡ bf3d3bd7-5a3a-4ffe-8ff2-fbb7b6c8a712
@@ -156,10 +156,10 @@ begin
 	L = 0.625e-3# image size
 	Δu = L/M
 	u = -L/2:Δu:(L/2)-Δu
-	
+
 	# # plot a physical object image
 	usaf
-	
+
 end
 
 # ╔═╡ 5349202f-7fd2-4915-b386-ae0a014f0dad
@@ -173,18 +173,18 @@ function circular_aperture(L,M,fnum)
 	fcoord = -1/(2*δu):1/L:1/(2*δu)
 	fgrid = [(j,i) for j in fcoord, i in fcoord]
 	H = zeros(M,M)
-	
+
 	keep_coord = []
-	
+
 	for fx in 1:size(fgrid,2)
 		for fy in 1:size(fgrid,1)
 			fdis = sqrt(fgrid[fx,fy][1]^2+fgrid[fx,fy][2]^2)
 			fdis <= f0 ? push!(keep_coord,(fx,fy)) : nothing
 		end
-		
+
 	end
 	# assign valued to the selected coordinates
-	for k in keep_coord 
+	for k in keep_coord
 		(i,j) = k
 		H[j,i] = 1
 	end
@@ -194,12 +194,12 @@ end
 
 # ╔═╡ 79a48318-2364-4ca7-a096-4b65101139d4
 begin
-	
+
 	circular_lens1 = circular_aperture(L,M,fnum)
 	fcoord = -1/(2*Δu):1/L:1/(2*Δu)
 	surface(fcoord./10^5,fcoord./10^5,circular_lens1, xlabel = "10^5 cycle/m", ylabel = "10^5 cycle/m",zlabel = "Magnitude",color = :grays, size = (500,500), aspect_ratio = 1,
 			title = "Magnitude Transfer Function", titlefontsize = 10)
-		
+
 end
 
 # ╔═╡ 571b5f6a-8d83-41d6-bddf-4098c40447af
@@ -213,15 +213,15 @@ begin
 	U_filtered = U.*circular_lens1
 	ui = ifft(U_filtered)
 # Image Amplitude Spectrum
-	p1 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U)), 
-			aspect_ratio = 1, 
-			color = :oslo, colorbar =true, colorbar_scales = :log10, 
+	p1 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U)),
+			aspect_ratio = 1,
+			color = :oslo, colorbar =true, colorbar_scales = :log10,
 			colorbar_title = "Log(magnitude)",
 			title = "Image Fourier Amplitude Spectrum", titlefontsize=10,
 			xlabel = "10^5 f(cycle/m)", ylabel =  "10^5 f(cycle/m)",
 		lims = (fcoord[1]./(10^5), fcoord[end]/(10^5)));
-	
-	p2= heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U_filtered)), 
+
+	p2= heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U_filtered)),
 		aspect_ratio = 1,
 		color = :oslo, colorbar =true, colorbar_scales = :log10,
 		colorbar_title = "Log(magnitude)",
@@ -229,7 +229,7 @@ begin
 		xlabel = "10^5 f(cycle/m)", ylabel =  "10^5 f(cycle/m)",
 		lims = (fcoord[1]./(10^5), fcoord[end]/(10^5)));
 	@show "Computing...."
-	
+
 end
 
 # ╔═╡ 940f8715-826d-4a6d-8567-e03dbb912483
@@ -243,16 +243,16 @@ heatmap(u,u,reverse(abs.(ui).^2, dims = 1), xlabel = "m", ylabel = "m",
 # ╔═╡ 696b732a-91d7-4a8f-a9e6-51e889b77d44
 md"
 **Optical components**
-1. Lens 
+1. Lens
 2. Mechanical slit
 3. Central obscuration
 "
 
 # ╔═╡ 83692351-63ec-4933-b932-ddde1908e924
 begin
-	
+
 	fnum_slide = @bind fnum_interact Slider(5:1:20, default=10, show_value=true)
-	
+
 	md""" Lens f/ $fnum_slide """
 
 end
@@ -260,27 +260,27 @@ end
 # ╔═╡ 45b832c1-191a-4254-8394-32183ee9e62c
 begin
 	mech_checkbox = @bind is_mech_slit CheckBox(default=false)
-	
+
 	md"""
-	Mechanical Slit $mech_checkbox 
+	Mechanical Slit $mech_checkbox
 	"""
 end
 
 
 # ╔═╡ d28475ba-d9aa-4ac3-a031-e7f030190943
 begin
-	
+
 	width_slide = @bind w_interact Slider(0.8:0.2:10.0, default=5.0, show_value=true)
-	
+
 	md"""mechanical slit width = $width_slide μm"""
 
 end
 
 # ╔═╡ ce35bdcb-094b-4e35-b574-775aee1cd042
 begin
-	
+
 	angle_slide = @bind angle_interact Slider(0:1:90, default=90, show_value=true)
-	
+
 	md"""mechanical slit angle = $angle_slide degree"""
 
 end
@@ -288,17 +288,17 @@ end
 # ╔═╡ d64dcbe5-d78a-4bde-801c-2ce9a41adfee
 begin
 	cobs_checkbox = @bind is_cobs CheckBox(default=false)
-	
+
 	md"""
-	Central obscuration $cobs_checkbox 
+	Central obscuration $cobs_checkbox
 	"""
 end
 
 # ╔═╡ 2641cc17-a78b-4b11-b044-a511b8f6f332
 begin
-	
+
 	r_slide = @bind r_interact Slider(0.4:0.2:2, default=1, show_value=true)
-	
+
 	md"""Central obscuration radius % = $r_slide %"""
 
 end
@@ -312,22 +312,22 @@ end
 
 # ╔═╡ 539c43b2-b7ab-4482-862d-c5c8b5f21989
 function slit(width,angle,L,sample,isslit = true)
-	
+
 	if ~isslit
 		return ones((sample,sample))
 	end
-	
-	
+
+
 	# Domain
 	w = width/1e6
 	M = sample
 	Δx = L/M
 	x = -L/2:Δx:L/2-Δx
 	slit = zeros((M,M))
-	
+
 	# Line
 	mid_point = convert(Int64,M/2)
-	
+
 	if angle == 90
 
 		x_bound = convert(Int64,floor(w/2/Δx))
@@ -336,20 +336,20 @@ function slit(width,angle,L,sample,isslit = true)
 		end
 		return slit
 	elseif angle == 0
-		
+
 		y_bound = convert(Int64,floor(w/2/Δx))
 		for k in mid_point-y_bound:mid_point+y_bound
 			slit[k,:] .= 1
 		end
 		return slit
-		
+
 	end
-	
+
 	θ = angle
 	m = round(tan(θ/180*pi),sigdigits = 3)
 	C = M/2*(1-m)
 	cells =[]
-	
+
 	# indices
 	for x_now in 1:M
 		y = convert(Int64,floor(m*x_now+C))
@@ -371,7 +371,7 @@ function slit(width,angle,L,sample,isslit = true)
 	perpen_m = -1/m
 	x_dis = convert(Int,ceil(w/2*sin(θ/180*pi)/Δx))
 	for cell in cells
-		local i,j   
+		local i,j
 		(i,j) = cell
 		intercept = j+i/m
 
@@ -423,7 +423,7 @@ function slit(width,angle,L,sample,isslit = true)
 			p_upper_y = upper_y
 		    p_lower_y = lower_y
 
-		else 
+		else
 			# case 2 no lower bound
 			if p_lower_y == 1
 				for k in 1:upper_y
@@ -442,13 +442,13 @@ function slit(width,angle,L,sample,isslit = true)
 
 
 	end
-	
+
 	return slit
 end
 
 # ╔═╡ 3e5cfcac-eba3-4595-9df0-4916d24ba4b7
 function central_obsuration(L,M,flens,r_ratio, is_obs = false)
-	if ~is_obs 
+	if ~is_obs
 		return ones(M,M)
 	end
 	r = L/2*r_ratio
@@ -456,18 +456,18 @@ function central_obsuration(L,M,flens,r_ratio, is_obs = false)
 	u = -L/2:δu:L/2-δu
 	grids = [(j,i) for j in u, i in u]
 	cobs = ones(M,M)
-	
+
 	keep_coord = []
-	
+
 	for x in 1:size(grids,2)
 		for y in 1:size(grids,1)
 			xdist = sqrt(grids[x,y][1]^2+grids[x,y][2]^2)
 			xdist <= r ? push!(keep_coord,(x,y)) : nothing
 		end
-		
+
 	end
 	# assign valued to the selected coordinates
-	for k in keep_coord 
+	for k in keep_coord
 		(i,j) = k
 		cobs[j,i] = 0
 	end
@@ -478,14 +478,14 @@ end
 begin
 	slit1 = slit(w_interact,angle_interact,L,M, is_mech_slit)
 	cobs1 = central_obsuration(L,M,flens,r_interact/100, is_cobs);
-	# visualize mechanical slit 
+	# visualize mechanical slit
 	p5 = heatmap(u.*1000,u.*1000,slit1, aspect_ratio = 1, color = :grays, xlabel = "mm", ylabel = "mm",
 		lims = (u[1]*1000, u[M]*1000),size = (300,250))
 	p6 = heatmap(u.*1000,u.*1000,cobs1, aspect_ratio = 1, color = :grays, xlabel = "mm", ylabel = "mm",
 		lims = (u[1]*1000, u[M]*1000),size = (300,250))
-	
+
 	plot(p5,p6, layout = (1,2),size = (1200,550), leg = false)
-	
+
 end
 
 # ╔═╡ 150ddf48-6a2d-4671-aaaa-f585eaa0a6ab
@@ -494,21 +494,21 @@ begin
 	U_slit_filtered = U.*slit1.*circular_lens_interact.*cobs1
 	ui2 = ifft(U_slit_filtered)
 	# Image Amplitude Spectrum
-	p3 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U_slit_filtered)), 
+	p3 = heatmap(fcoord./(10^5), fcoord./(10^5), log.(abs.(U_slit_filtered)),
 		aspect_ratio = 1,
 		color = :oslo, colorbar =true, colorbar_scales = :log10,
 		colorbar_title = "Log(magnitude)",
 		title = "Filtered Amplitude Spectrum", titlefontsize=10,
 		xlabel = "10^5 f(cycle/m)", ylabel =  "10^5 f(cycle/m)",
 		lims = (fcoord[1]./(10^5), fcoord[end]/(10^5)));
-	
+
 	p4 = heatmap(u.*1000,u.*1000,reverse(abs.(ui2).^2, dims = 1), xlabel = "mm",
 		ylabel = "mm", color = :grays, aspect_ratio = 1, cbar = true,
 		title = "Slit Filtered f/# = $fnum_interact", titlefontsize = 10,
 		reverse = true, lims = (u[1]*1000, u[end]*1000))
 	# resulting image
 	@show "Computing Result...."
-	
+
 end
 
 # ╔═╡ 189414d4-22d6-42d4-a737-fa9648385388

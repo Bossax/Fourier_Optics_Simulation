@@ -28,6 +28,7 @@ begin
 	Pkg.add("Plots")
 	Pkg.add("FFTW")
 	Pkg.add("FileIO")
+	Pkg.add("HTTP")
 
 
 end
@@ -39,6 +40,7 @@ begin
 	using Plots
 	using FFTW
 	using FileIO
+	using HTTP
 	using PlutoUI
 	using Plots.PlotMeasures
 
@@ -115,7 +117,8 @@ md"
 
 # ╔═╡ d951f366-f8d5-4d2b-b2ea-7f832733f5d1
 begin
-	usaf= load("usaf_test_chart.jpeg")
+	
+	usaf= load(HTTP.URI("https://tinyurl.com/c4jtz7cf"))
 	Ig = Float64.(Gray.(usaf))
 	ug = sqrt.(Ig)
 	@show "Loading sampled image"
@@ -135,7 +138,7 @@ Simulate an imaging system consisting of a lens with a diameter of 1 inch and a 
 
 # ╔═╡ b830713c-65e5-4b1e-9450-48e281d75cee
 begin
-	flens = 125 # mm
+	flens = 150 # mm
 	Dlens = 5 # mm
 	λ = 0.5e-6
 	fnum = flens/Dlens
@@ -153,7 +156,7 @@ Choose side length of the object plane to be 0.000625 m
 
 # ╔═╡ 5a802c3f-f211-4fc4-9d73-f0641f9d3af7
 begin
-	L = 0.625e-3# image size
+	L = 0.004# image size
 	Δu = L/M
 	u = -L/2:Δu:(L/2)-Δu
 
@@ -196,7 +199,7 @@ end
 begin
 
 	circular_lens1 = circular_aperture(L,M,fnum)
-	fcoord = -1/(2*Δu):1/L:1/(2*Δu)
+	fcoord = -1/(2*Δu):1/L:1/(2*Δu)-1/L
 	surface(fcoord./10^5,fcoord./10^5,circular_lens1, xlabel = "10^5 cycle/m", ylabel = "10^5 cycle/m",zlabel = "Magnitude",color = :grays, size = (500,500), aspect_ratio = 1,
 			title = "Magnitude Transfer Function", titlefontsize = 10)
 
@@ -251,7 +254,7 @@ md"
 # ╔═╡ 83692351-63ec-4933-b932-ddde1908e924
 begin
 
-	fnum_slide = @bind fnum_interact Slider(5:1:20, default=10, show_value=true)
+	fnum_slide = @bind fnum_interact Slider(20:1:40, default=30, show_value=true)
 
 	md""" Lens f/ $fnum_slide """
 
@@ -270,7 +273,7 @@ end
 # ╔═╡ d28475ba-d9aa-4ac3-a031-e7f030190943
 begin
 
-	width_slide = @bind w_interact Slider(0.8:0.2:10.0, default=5.0, show_value=true)
+	width_slide = @bind w_interact Slider(10:0.2:100.0, default=50.0, show_value=true)
 
 	md"""mechanical slit width = $width_slide μm"""
 
@@ -524,7 +527,7 @@ plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 # ╟─62baadb6-9ef8-4c3d-b447-e9622550953a
 # ╟─b830713c-65e5-4b1e-9450-48e281d75cee
 # ╟─bf3d3bd7-5a3a-4ffe-8ff2-fbb7b6c8a712
-# ╟─5a802c3f-f211-4fc4-9d73-f0641f9d3af7
+# ╠═5a802c3f-f211-4fc4-9d73-f0641f9d3af7
 # ╟─5349202f-7fd2-4915-b386-ae0a014f0dad
 # ╟─79a48318-2364-4ca7-a096-4b65101139d4
 # ╟─571b5f6a-8d83-41d6-bddf-4098c40447af

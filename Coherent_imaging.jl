@@ -27,7 +27,7 @@ begin
 	Pkg.add("PlutoUI")
 	Pkg.add("Plots")
 	Pkg.add("FFTW")
-	Pkg.add("FileIO")
+	Pkg.add("Images")
 	Pkg.add("HTTP")
 
 
@@ -39,7 +39,7 @@ end
 begin
 	using Plots
 	using FFTW
-	using FileIO
+	using Images
 	using HTTP
 	using PlutoUI
 	using Plots.PlotMeasures

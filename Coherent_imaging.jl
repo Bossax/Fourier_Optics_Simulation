@@ -313,6 +313,63 @@ begin
 end
 
 
+# ╔═╡ 3d335ed4-2118-4fb7-af1d-448f24f811a9
+function tilt(uin, L, λ, α, θ)
+	"""
+	tilt phase front
+	inputs
+	1. input field - uin
+	2. side length - L 
+	3. wave length - λ 
+	4. tilt angle = α (deg)
+	5. Rotational angle (optical axis) = θ (deg)
+	
+	output
+	tilted field
+	"""
+	α = deg2rad(α)
+	θ = deg2rad(θ)
+	
+	j = im
+	M, N = size(uin)
+	dx = L/M
+	xcoord = -L/2:dx:L/2-dx
+	k = 2π/λ
+	
+	# transmittance function
+	t_a = [exp(j*k*(x*cos(θ)+y*sin(θ))*tan(-α)) for y in xcoord, x in x_coord]
+	
+	return reverse(uin.*t_a, dims =2)
+end
+
+# ╔═╡ d51d97ee-4540-4907-8a76-bf489d0aab82
+function focus(uin,L,λ,zf)
+	"""
+	Focusing and defocusing
+	Converging and diverging wavefront
+	
+	inputs
+	1. source field - uin
+	2. side length - L
+	3. wave length - λ
+	4. focus/defocus length from the source plane - zf (zf positive is focus)
+
+	output
+	converging/diverging source field
+	"""
+	
+	j = im
+	M, N = size(uin)
+	dx = L/M
+	xcoord = -L/2:dx:L/2-dx
+	k = 2π/λ
+	
+	# transmittance function
+	t = [exp(-j*k/(2zf)*(x^2+y^2)) for y in x_coord, x in x_coord]
+	
+	return reverse(uin.*t, dims = 1)
+end
+
 # ╔═╡ 539c43b2-b7ab-4482-862d-c5c8b5f21989
 function slit(width,angle,L,sample,isslit = true)
 
@@ -542,6 +599,8 @@ plot(p3,p4, layout = (1,2),size = (1200,550), leg = false)
 # ╟─d64dcbe5-d78a-4bde-801c-2ce9a41adfee
 # ╟─2641cc17-a78b-4b11-b044-a511b8f6f332
 # ╟─db6ecd92-e0a7-4d8d-8822-cda7dcb11026
+# ╟─3d335ed4-2118-4fb7-af1d-448f24f811a9
+# ╟─d51d97ee-4540-4907-8a76-bf489d0aab82
 # ╟─539c43b2-b7ab-4482-862d-c5c8b5f21989
 # ╟─3e5cfcac-eba3-4595-9df0-4916d24ba4b7
 # ╟─10f97269-6b1c-42ba-afaf-da6dd140e004
